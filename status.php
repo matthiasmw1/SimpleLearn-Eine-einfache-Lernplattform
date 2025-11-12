@@ -3,8 +3,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/util/dbUtil.php';
 require_once __DIR__ . '/util/utils.php';
-require __DIR__ . '/includes/nav.php';
-start_session_once();
+
 
 $ok = 'not connected';
 try {
@@ -13,12 +12,15 @@ try {
 } catch (Throwable $e) {
   $ok = 'DB error: ' . $e->getMessage();
 }
+
+
 ?>
+
 <!doctype html>
 <html lang="de">
   <head>
     <?php require __DIR__ . '/includes/head-includes.php'; ?>
-    <title>Start</title>
+    <title>Status</title>
   </head>
   <body class="container py-4">
     <h1>SimpleLearn</h1>

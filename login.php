@@ -14,8 +14,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   } else {
     try {
       $pdo = DB::conn();
-      $stmt = $pdo->prepare('SELECT id, username, email, password_hash, role FROM users WHERE username = :u OR email = :u LIMIT 1');
-      $stmt->execute([':u' => $usernameOrEmail]);
+      $stmt = $pdo->prepare(
+        'SELECT id, username, email, password_hash, role
+         FROM users
+         WHERE username = :u OR email = :e
+         LIMIT 1'
+      );
+      $stmt->execute([':u' => $usernameOrEmail, ':e' => $usernameOrEmail]);
       $user = $stmt->fetch();
       if (!$user || !password_verify($password, $user['password_hash'])) {
         $errors[] = 'Ungültige Anmeldedaten.';

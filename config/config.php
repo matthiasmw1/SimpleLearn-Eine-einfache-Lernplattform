@@ -6,5 +6,5 @@ define('DB_NAME', 'simplelearn');
 define('DB_USER', 'root');
 define('DB_PASS', '');
 define('BASE_URL', '/simplelearn'); //URL-Stamm deiner App z.B. http://localhost/projektName
-define('ALLOW_ROLE_SELECT_ON_REGISTER', true);
+define('ALLOW_ROLE_SELECT_ON_REGISTER', true);  // Rollenwahl bei Registrierung erlauben? später auf false setzen
 ?>
