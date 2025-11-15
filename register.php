@@ -1,103 +1,130 @@
 <?php
-declare(strict_types=1);
-require_once __DIR__ . '/util/dbUtil.php';
-require_once __DIR__ . '/util/utils.php';
-require_once __DIR__ . '/config/config.php';
-start_session_once();
+session_start();
+
+// Fake-User "Datenbank" – gleich wie beim Login
+$fakeUsers = [
+    [
+        'id' => 1,
+        'username' => 'testUser',
+        'email' => 'example@example.org',
+        'password_hash' => '$2y$10$QqSCJCBQJfXzsN91SwbYWe6TaD51M7eLeLdFzE8mBlwwv9qZ7sG9u',
+        'role' => 'user'
+    ]
+];
+
+function findUser($usernameOrEmail, $fakeUsers) {
+    foreach ($fakeUsers as $u) {
+        if ($u['username'] === $usernameOrEmail || $u['email'] === $usernameOrEmail) {
+            return $u;
+        }
+    }
+    return null;
+}
 
 $errors = [];
-$success = null;
+$success = '';
 
-// Form verarbeitet?
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  $username = trim($_POST['username'] ?? '');
-  $email    = trim($_POST['email'] ?? '');
-  $password = $_POST['password'] ?? '';
-  $roleReq  = $_POST['role'] ?? 'user';
+    $username = trim($_POST['username'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
+    $passwordRepeat = $_POST['password_repeat'] ?? '';
 
-  // 1) Grundvalidierung
-  if ($username === '' || strlen($username) < 3) { $errors[] = 'Username min. 3 Zeichen.'; }
-  if (!filter_var($email, FILTER_VALIDATE_EMAIL)) { $errors[] = 'Ungültige E-Mail.'; }
-  if (strlen($password) < 6) { $errors[] = 'Passwort min. 6 Zeichen.'; }
-
-  // 2) Rolle nur erlauben, wenn Flag aktiv — sonst immer "user"
-  $role = 'user';
-  if (ALLOW_ROLE_SELECT_ON_REGISTER) {
-    $role = ($roleReq === 'admin') ? 'admin' : 'user';
-  }
-
-  if (!$errors) {
-    try {
-      $pdo = DB::conn();
-
-      // 3) Duplikate prüfen
-      $stmt = $pdo->prepare('SELECT id FROM users WHERE username = :u OR email = :e LIMIT 1');
-      $stmt->execute([':u' => $username, ':e' => $email]);
-      if ($stmt->fetch()) {
-        $errors[] = 'Username oder E-Mail existiert bereits.';
-      } else {
-        // 4) Hash + Insert
-        $hash = password_hash($password, PASSWORD_DEFAULT);
-        $ins = $pdo->prepare('INSERT INTO users (username, email, password_hash, role) VALUES (:u, :e, :p, :r)');
-        $ins->execute([':u' => $username, ':e' => $email, ':p' => $hash, ':r' => $role]);
-        $success = 'Registrierung erfolgreich. Du kannst dich jetzt einloggen.';
-      }
-    } catch (Throwable $t) {
-      $errors[] = 'DB-Fehler: ' . $t->getMessage();
+    // Basis-Validierung
+    if ($username === '' || $email === '' || $password === '' || $passwordRepeat === '') {
+        $errors[] = 'Bitte alle Felder ausfüllen.';
     }
-  }
+
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $errors[] = 'Bitte eine gültige E-Mail-Adresse eingeben.';
+    }
+
+    if ($password !== $passwordRepeat) {
+        $errors[] = 'Die Passwörter stimmen nicht überein.';
+    }
+
+    if (strlen($password) < 6) {
+        $errors[] = 'Das Passwort muss mindestens 6 Zeichen lang sein.';
+    }
+
+    // Prüfen, ob User/Email schon existieren (in Fake-DB)
+    foreach ($fakeUsers as $u) {
+        if ($u['username'] === $username) {
+            $errors[] = 'Benutzername ist bereits vergeben.';
+        }
+        if ($u['email'] === $email) {
+            $errors[] = 'E-Mail ist bereits registriert.';
+        }
+    }
+
+    // Wenn alles ok ist:
+    if (empty($errors)) {
+        // Hier würde später der DB-Insert passieren
+        // $passwordHash = password_hash($password, PASSWORD_DEFAULT);
+        // INSERT INTO users ...
+
+        $success = 'Registrierung erfolgreich! Du kannst dich jetzt mit deinen Daten einloggen (Speicherung in DB folgt später).';
+    }
 }
 ?>
-<!doctype html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
-  <?php require __DIR__ . '/includes/head-includes.php'; ?>
-  <title>Registrieren</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrierung - SimpleLearn</title>
+    <?php include __DIR__ . '/includes/head-includes.php'; ?>
 </head>
-<body class="container py-4">
-  <h1>Registrieren</h1>
+<body>
+<?php include __DIR__ . '/includes/header.php'; ?>
+<?php include __DIR__ . '/includes/nav.php'; ?>
 
-  <?php if ($success): ?>
-    <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
-    <p><a class="btn btn-primary" href="login.php">Zum Login</a></p>
-  <?php endif; ?>
+<main class="container mt-4">
+    <h2 class="mb-4">Registrierung</h2>
 
-  <?php if ($errors): ?>
-    <div class="alert alert-danger">
-      <ul class="mb-0">
-        <?php foreach ($errors as $e): ?>
-          <li><?= htmlspecialchars($e) ?></li>
-        <?php endforeach; ?>
-      </ul>
-    </div>
-  <?php endif; ?>
-
-  <form method="post" class="vstack gap-3" novalidate>
-    <div>
-      <label class="form-label">Username</label>
-      <input class="form-control" name="username" required minlength="3" value="<?= htmlspecialchars($_POST['username'] ?? '') ?>">
-    </div>
-    <div>
-      <label class="form-label">E-Mail</label>
-      <input class="form-control" type="email" name="email" required value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
-    </div>
-    <div>
-      <label class="form-label">Passwort</label>
-      <input class="form-control" type="password" name="password" required minlength="6">
-    </div>
-
-    <?php if (ALLOW_ROLE_SELECT_ON_REGISTER): ?>
-      <div>
-        <label class="form-label">Rolle (nur Test)</label>
-        <select class="form-select" name="role">
-          <option value="user"  <?= (($_POST['role'] ?? '')==='user')?'selected':''; ?>>User</option>
-          <option value="admin" <?= (($_POST['role'] ?? '')==='admin')?'selected':''; ?>>Admin</option>
-        </select>
-        <div class="form-text">Nur lokal zum Testen. Später deaktivieren.</div>
-      </div>
+    <?php if (!empty($success)): ?>
+        <div class="alert alert-success">
+            <?php echo htmlspecialchars($success); ?>
+        </div>
     <?php endif; ?>
 
-    <button class="btn btn-success" type="submit">Registrieren</button>
-  </form>
+    <?php if (!empty($errors)): ?>
+        <div class="alert alert-danger">
+            <?php foreach ($errors as $e): ?>
+                <div><?php echo htmlspecialchars($e); ?></div>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+
+    <form method="post">
+        <div class="mb-3">
+            <label class="form-label">Benutzername</label>
+            <input type="text" name="username" class="form-control"
+                   value="<?php echo htmlspecialchars($username ?? ''); ?>"
+                   required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">E-Mail</label>
+            <input type="email" name="email" class="form-control"
+                   value="<?php echo htmlspecialchars($email ?? ''); ?>"
+                   required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Passwort</label>
+            <input type="password" name="password" class="form-control" required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Passwort wiederholen</label>
+            <input type="password" name="password_repeat" class="form-control" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Registrieren</button>
+    </form>
+</main>
+
+<?php include __DIR__ . '/includes/footer.php'; ?>
 </body>
 </html>

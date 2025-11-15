@@ -1,70 +1,106 @@
 <?php
-declare(strict_types=1);
-require_once __DIR__ . '/util/dbUtil.php';
-require_once __DIR__ . '/util/utils.php';
-start_session_once();
+    $fakeUsers = [
+        [
+            'id' => 1,
+            'username' => 'testUser',
+            'email' => 'example@example.org',
+            'password_hash' => '$2y$10$LQicULMMXeBtUmbGG3.O../BkKIDZNtfbuJYmP4FQRAS5NkAaFTiq',
+            'role' => 'user'
+        ]
+    ];
+
+function findUser($usernameOrEmail, $fakeUsers) {
+    foreach ($fakeUsers as $u) {
+        if ($u['username'] === $usernameOrEmail || $u['email'] === $usernameOrEmail) {
+            return $u;
+        }
+    }
+    return null;
+}
+
+session_start();
 
 $errors = [];
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  $usernameOrEmail = trim($_POST['user'] ?? '');
-  $password        = $_POST['password'] ?? '';
 
-  if ($usernameOrEmail === '' || $password === '') {
-    $errors[] = 'Bitte Benutzername/E-Mail und Passwort angeben.';
-  } else {
-    try {
-      $pdo = DB::conn();
-      $stmt = $pdo->prepare(
-        'SELECT id, username, email, password_hash, role
-         FROM users
-         WHERE username = :u OR email = :e
-         LIMIT 1'
-      );
-      $stmt->execute([':u' => $usernameOrEmail, ':e' => $usernameOrEmail]);
-      $user = $stmt->fetch();
-      if (!$user || !password_verify($password, $user['password_hash'])) {
-        $errors[] = 'Ungültige Anmeldedaten.';
-      } else {
-        // Session setzen
-        $_SESSION['user_id'] = (int)$user['id'];
-        $_SESSION['username'] = $user['username'];
-        $_SESSION['role'] = $user['role']; // 'user' | 'admin'
-        redirect('index.php');
-      }
-    } catch (Throwable $t) {
-      $errors[] = 'DB-Fehler: ' . $t->getMessage();
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    
+    $usernameOrEmail = $_POST['usernameOrEmail'] ?? '';
+    $password = $_POST['password'] ?? '';
+    var_dump($usernameOrEmail, $password);
+
+    if ($usernameOrEmail === '' || $password === '') {
+        $errors[] = 'Bitte Benutzername/E-Mail und Passwort angeben.';
+    } else {
+        $user = findUser($usernameOrEmail, $fakeUsers);
+
+        if (!$user || !password_verify($password, $user['password_hash'])) {
+            $errors[] = 'Ungültige Anmeldedaten.';
+        } else {
+            // Session setzen
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['username'] = $user['username'];
+            $_SESSION['role'] = $user['role'];
+
+            header('Location: index.php');
+            exit;
+        }
     }
-  }
 }
+
 ?>
-<!doctype html>
+
+<!DOCTYPE html>
 <html lang="de">
 <head>
-  <?php require __DIR__ . '/includes/head-includes.php'; ?>
-  <title>Login</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - SimpleLearn</title>
+
+    <?php include __DIR__ . '/includes/head-includes.php'; ?>
 </head>
-<body class="container py-4" >
-  <h1>Login</h1>
+<body>
+    <?php include __DIR__ . '/includes/header.php'; ?>
+    <?php include __DIR__ . '/includes/nav.php'; ?>
 
-  <?php if ($errors): ?>
-    <div class="alert alert-danger">
-      <ul class="mb-0">
-        <?php foreach ($errors as $e): ?><li><?= htmlspecialchars($e) ?></li><?php endforeach; ?>
-      </ul>
-    </div>
-  <?php endif; ?>
+    <main class="container mt-4">
+    <h2 class="mb-4">Login</h2>
 
-  <form method="post" class="vstack gap-3" novalidate>
-    <div>
-      <label class="form-label">Benutzername oder E-Mail</label>
-      <input class="form-control" name="user" value="<?= htmlspecialchars($_POST['user'] ?? '') ?>" required>
-    </div>
-    <div>
-      <label class="form-label">Passwort</label>
-      <input class="form-control" type="password" name="password" required>
-    </div>
-    <button class="btn btn-primary" type="submit">Anmelden</button>
-    <a class="btn btn-link" href="register.php">Neu? Registrieren</a>
-  </form>
+    <!-- Fehlerausgabe -->
+    <?php if (!empty($errors)): ?>
+        <div class="alert alert-danger">
+            <?php foreach ($errors as $e): ?>
+                <div><?php echo htmlspecialchars($e); ?></div>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+
+    <!-- Login-Formular -->
+    <form method="post">
+        <div class="mb-3">
+            <label class="form-label">Benutzername oder E-Mail</label>
+            <input type="text" name="usernameOrEmail" class="form-control"
+                   placeholder="z.B. testUser oder example@example.org"
+                   required>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Passwort</label>
+            <input type="password" name="password" class="form-control"
+                   placeholder="Passwort eingeben"
+                   required>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Einloggen</button>
+
+        <p class="mt-3">
+            Noch kein Konto?
+            <a href="register.php">Jetzt registrieren</a>
+        </p>
+
+    </form>
+</main>
+
+<?php include __DIR__ . '/includes/footer.php'; ?>
+
 </body>
 </html>
