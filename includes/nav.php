@@ -1,4 +1,5 @@
 <?php
+//Menü-Leiste
 // includes/nav.php
 start_session_once();
 $isLoggedIn = isset($_SESSION['user_id']);
