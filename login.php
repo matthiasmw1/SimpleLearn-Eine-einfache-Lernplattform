@@ -13,13 +13,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($usernameOrEmail === '' || $password === '') {
         $errors[] = 'Bitte Benutzername/E-Mail und Passwort angeben.';
     } else {
-        // NEU: richtige Funktion aus util/users.php
         $user = findUserByUsernameOrEmail($usernameOrEmail);
 
         if (!$user || !password_verify($password, $user['password_hash'])) {
             $errors[] = 'Ungültige Anmeldedaten.';
         } else {
-            // Session setzen
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
             $_SESSION['role'] = $user['role'];
