@@ -1,5 +1,6 @@
 <?php
-session_start();
+require __DIR__ . '/util/auth.php';
+startAuthSession();
 
 // Fake-User "Datenbank" – gleich wie beim Login
 $fakeUsers = [
@@ -42,10 +43,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($password !== $passwordRepeat) {
         $errors[] = 'Die Passwörter stimmen nicht überein.';
     }
-
     if (strlen($password) < 6) {
         $errors[] = 'Das Passwort muss mindestens 6 Zeichen lang sein.';
     }
+    if (!preg_match('/[a-z]/', $password)) {
+        $errors[] = 'Das Passwort muss mindestens einen Kleinbuchstaben enthalten.';
+    }
+    if (!preg_match('/[A-Z]/', $password)) {
+        $errors[] = 'Das Passwort muss mindestens einen Großbuchstaben enthalten.';
+    }
+    if (!preg_match('/\d/', $password)) {
+        $errors[] = 'Das Passwort muss mindestens eine Zahl enthalten.';
+    }
+    if (!preg_match('/[^a-zA-Z\d]/', $password)) {
+        $errors[] = 'Das Passwort muss mindestens ein Sonderzeichen enthalten.';
+    }
+
 
     // Prüfen, ob User/Email schon existieren (in Fake-DB)
     foreach ($fakeUsers as $u) {

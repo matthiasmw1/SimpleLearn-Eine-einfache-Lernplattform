@@ -1,5 +1,6 @@
 <?php
-session_start();
+require __DIR__ . '/util/auth.php';
+startAuthSession();
 
 require __DIR__ . '/util/courses.php';
 // index.php

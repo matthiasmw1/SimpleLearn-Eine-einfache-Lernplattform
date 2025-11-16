@@ -1,5 +1,6 @@
 <?php
-session_start();
+require __DIR__ . '/util/auth.php';
+startAuthSession();
 
 // Nur eingeloggte Nutzer dürfen Kursdetails sehen
 if (empty($_SESSION['user_id'])) {

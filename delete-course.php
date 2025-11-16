@@ -1,5 +1,6 @@
 <?php
-session_start();
+require __DIR__ . '/util/auth.php';
+startAuthSession();
 
 if (empty($_SESSION['user_id'])) {
     header('Location: login.php');

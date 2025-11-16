@@ -1,37 +1,20 @@
 <?php
-    $fakeUsers = [
-        [
-            'id' => 1,
-            'username' => 'testUser',
-            'email' => 'example@example.org',
-            'password_hash' => '$2y$10$LQicULMMXeBtUmbGG3.O../BkKIDZNtfbuJYmP4FQRAS5NkAaFTiq',
-            'role' => 'user'
-        ]
-    ];
-
-function findUser($usernameOrEmail, $fakeUsers) {
-    foreach ($fakeUsers as $u) {
-        if ($u['username'] === $usernameOrEmail || $u['email'] === $usernameOrEmail) {
-            return $u;
-        }
-    }
-    return null;
-}
-
+require __DIR__ . '/util/users.php';
 session_start();
+
 
 $errors = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    
+
     $usernameOrEmail = $_POST['usernameOrEmail'] ?? '';
     $password = $_POST['password'] ?? '';
-    var_dump($usernameOrEmail, $password);
 
     if ($usernameOrEmail === '' || $password === '') {
         $errors[] = 'Bitte Benutzername/E-Mail und Passwort angeben.';
     } else {
-        $user = findUser($usernameOrEmail, $fakeUsers);
+        // NEU: richtige Funktion aus util/users.php
+        $user = findUserByUsernameOrEmail($usernameOrEmail);
 
         if (!$user || !password_verify($password, $user['password_hash'])) {
             $errors[] = 'Ungültige Anmeldedaten.';
@@ -41,11 +24,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['username'] = $user['username'];
             $_SESSION['role'] = $user['role'];
 
+            // Remember-Me?
+            $remember = !empty($_POST['remember_me']);
+
+            if ($remember) {
+                // Cookie für z. B. 7 Tage
+                setcookie('remember_user', $user['id'], time() + 60 * 60 * 24 * 7, '/');
+            } else {
+                // Falls es einen alten Cookie gibt → löschen
+                setcookie('remember_user', '', time() - 3600, '/');
+            }
+
             header('Location: index.php');
             exit;
         }
     }
 }
+
 
 ?>
 
@@ -88,6 +83,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <input type="password" name="password" class="form-control"
                    placeholder="Passwort eingeben"
                    required>
+        </div>
+
+        <div class="mb-3 form-check">
+            <input type="checkbox" name="remember_me" class="form-check-input" id="rememberMe">
+            <label class="form-check-label" for="rememberMe">
+                Angemeldet bleiben
+            </label>
         </div>
 
         <button type="submit" class="btn btn-primary">Einloggen</button>
