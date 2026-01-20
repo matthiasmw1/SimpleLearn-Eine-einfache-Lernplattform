@@ -78,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         <?php endif; ?>
 
-        <form method="post" class="col-md-6">
+        <form method="post" class="col-md-6" autocomplete="off">
             <div class="mb-3">
                 <label class="form-label">Benutzername</label>
                 <input type="text" name="username" class="form-control" 
