@@ -1,54 +1,36 @@
 <?php
-require __DIR__ . '/util/users.php';
-session_start();
-
+require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/util/db_users.php';
+require_once __DIR__ . '/util/auth_helper.php';
 
 $errors = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-
-    $usernameOrEmail = $_POST['usernameOrEmail'] ?? '';
+    $usernameOrEmail = $_POST['username_or_email'] ?? '';
     $password = $_POST['password'] ?? '';
-
-    if ($usernameOrEmail === '' || $password === '') {
-        $errors[] = 'Bitte Benutzername/E-Mail und Passwort angeben.';
+    
+    if (!$usernameOrEmail || !$password) {
+        $errors[] = 'Benutzername/E-Mail und Passwort erforderlich.';
     } else {
         $user = findUserByUsernameOrEmail($usernameOrEmail);
-
+        
         if (!$user || !password_verify($password, $user['password_hash'])) {
             $errors[] = 'Ungültige Anmeldedaten.';
         } else {
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['username'] = $user['username'];
-            $_SESSION['role'] = $user['role'];
-
-            // Remember-Me?
-            $remember = !empty($_POST['remember_me']);
-
-            if ($remember) {
-                // Cookie für z. B. 7 Tage
-                setcookie('remember_user', $user['id'], time() + 60 * 60 * 24 * 7, '/');
-            } else {
-                // Falls es einen alten Cookie gibt → löschen
-                setcookie('remember_user', '', time() - 3600, '/');
-            }
-
-            header('Location: index.php');
+            // Login erfolgreich
+            login($user['id'], $user['username'], $user['role']);
+            header("Location: index.php");
             exit;
         }
     }
 }
-
-
 ?>
-
 <!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - SimpleLearn</title>
-
     <?php include __DIR__ . '/includes/head-includes.php'; ?>
 </head>
 <body>
@@ -56,51 +38,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php include __DIR__ . '/includes/nav.php'; ?>
 
     <main class="container mt-4">
-    <h2 class="mb-4">Login</h2>
+        <h2 class="mb-4">Login</h2>
 
-    <!-- Fehlerausgabe -->
-    <?php if (!empty($errors)): ?>
-        <div class="alert alert-danger">
-            <?php foreach ($errors as $e): ?>
-                <div><?php echo htmlspecialchars($e); ?></div>
-            <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
+        <?php if (!empty($errors)): ?>
+            <div class="alert alert-danger">
+                <?php foreach ($errors as $e): ?>
+                    <div><?php echo htmlspecialchars($e); ?></div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
 
-    <!-- Login-Formular -->
-    <form method="post">
-        <div class="mb-3">
-            <label class="form-label">Benutzername oder E-Mail</label>
-            <input type="text" name="usernameOrEmail" class="form-control"
-                   placeholder="z.B. testUser oder example@example.org"
-                   required>
-        </div>
+        <form method="post" class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Benutzername oder E-Mail</label>
+                <input type="text" name="username_or_email" class="form-control" required autofocus>
+            </div>
 
-        <div class="mb-3">
-            <label class="form-label">Passwort</label>
-            <input type="password" name="password" class="form-control"
-                   placeholder="Passwort eingeben"
-                   required>
-        </div>
+            <div class="mb-3">
+                <label class="form-label">Passwort</label>
+                <input type="password" name="password" class="form-control" required>
+            </div>
 
-        <div class="mb-3 form-check">
-            <input type="checkbox" name="remember_me" class="form-check-input" id="rememberMe">
-            <label class="form-check-label" for="rememberMe">
-                Angemeldet bleiben
-            </label>
-        </div>
-
-        <button type="submit" class="btn btn-primary">Einloggen</button>
+            <button type="submit" class="btn btn-primary">Einloggen</button>
+        </form>
 
         <p class="mt-3">
-            Noch kein Konto?
-            <a href="register.php">Jetzt registrieren</a>
+            Noch kein Konto? <a href="register.php">Jetzt registrieren</a>
         </p>
 
-    </form>
-</main>
+        <div class="alert alert-info mt-4">
+            <strong>Test-Daten:</strong><br>
+            Admin: admin / admin123<br>
+            User: testuser / test123
+        </div>
+    </main>
 
-<?php include __DIR__ . '/includes/footer.php'; ?>
-
+    <?php include __DIR__ . '/includes/footer.php'; ?>
 </body>
 </html>

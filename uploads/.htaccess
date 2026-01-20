@@ -1,0 +1,11 @@
+# uploads/.htaccess - Verhindere PHP-Execution
+
+<FilesMatch "\.php$">
+    Order Deny,Allow
+    Deny from all
+</FilesMatch>
+
+# Erlauben nur zum Download
+<IfModule mod_autoindex.c>
+    IndexIgnore *
+</IfModule>

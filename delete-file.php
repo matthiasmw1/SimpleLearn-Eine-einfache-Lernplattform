@@ -1,30 +1,43 @@
 <?php
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/util/db_files.php';
 require_once __DIR__ . '/util/db_courses.php';
 require_once __DIR__ . '/util/auth_helper.php';
 
 requireLogin();
 
-$course_id = $_GET['id'] ?? null;
+$file_id = $_GET['id'] ?? null;
 
-if (!$course_id || !is_numeric($course_id)) {
+if (!$file_id || !is_numeric($file_id)) {
     header("Location: index.php");
     exit;
 }
 
-$course = getCourseById($course_id);
+$file = getFileById($file_id);
 
-if (!$course || !canEditCourse($course_id)) {
+if (!$file) {
+    header("Location: index.php");
+    exit;
+}
+
+if (!canEditCourse($file['course_id'])) {
     header("Location: index.php");
     exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (deleteCourse($course_id)) {
-        header("Location: index.php?message=Kurs gelöscht");
+    // Datei vom Server löschen
+    $file_path = __DIR__ . $file['file_path'];
+    if (file_exists($file_path)) {
+        unlink($file_path);
+    }
+    
+    // Aus DB löschen
+    if (deleteFile($file_id)) {
+        header("Location: course-details.php?id=" . $file['course_id']);
         exit;
     } else {
-        $error = 'Fehler beim Löschen des Kurses.';
+        $error = 'Fehler beim Löschen der Datei.';
     }
 }
 ?>
@@ -33,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kurs löschen - SimpleLearn</title>
+    <title>Datei löschen - SimpleLearn</title>
     <?php include __DIR__ . '/includes/head-includes.php'; ?>
 </head>
 <body>
@@ -41,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php include __DIR__ . '/includes/nav.php'; ?>
 
     <main class="container mt-4">
-        <h2 class="mb-4">Kurs löschen</h2>
+        <h2 class="mb-4">Datei löschen</h2>
 
         <?php if (isset($error)): ?>
             <div class="alert alert-danger">
@@ -50,9 +63,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
 
         <div class="alert alert-warning col-lg-6">
-            <strong>Warnung!</strong> Du wirst den Kurs permanent löschen:
+            <strong>Warnung!</strong> Du wirst folgende Datei permanent löschen:
             <br><br>
-            <strong><?php echo htmlspecialchars($course['title']); ?></strong>
+            <strong><?php echo htmlspecialchars($file['file_name']); ?></strong>
             <br><br>
             Diese Aktion kann <strong>NICHT</strong> rückgängig gemacht werden!
         </div>
@@ -60,9 +73,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <form method="post" class="col-lg-6">
             <div class="mb-3">
                 <button type="submit" class="btn btn-danger btn-lg">
-                    Ja, Kurs löschen
+                    Ja, Datei löschen
                 </button>
-                <a href="course-details.php?id=<?php echo $course_id; ?>" class="btn btn-secondary btn-lg">
+                <a href="course-details.php?id=<?php echo $file['course_id']; ?>" class="btn btn-secondary btn-lg">
                     Abbrechen
                 </a>
             </div>

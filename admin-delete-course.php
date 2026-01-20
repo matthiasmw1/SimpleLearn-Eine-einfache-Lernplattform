@@ -1,27 +1,32 @@
 <?php
 require_once __DIR__ . '/config.php';
-require_once __DIR__ . '/util/db_courses.php';
 require_once __DIR__ . '/util/auth_helper.php';
+require_once __DIR__ . '/util/db_courses.php';
 
 requireLogin();
+
+if (!isAdmin()) {
+    header("Location: index.php");
+    exit;
+}
 
 $course_id = $_GET['id'] ?? null;
 
 if (!$course_id || !is_numeric($course_id)) {
-    header("Location: index.php");
+    header("Location: admin.php");
     exit;
 }
 
 $course = getCourseById($course_id);
 
-if (!$course || !canEditCourse($course_id)) {
-    header("Location: index.php");
+if (!$course) {
+    header("Location: admin.php");
     exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (deleteCourse($course_id)) {
-        header("Location: index.php?message=Kurs gelöscht");
+        header("Location: admin.php?tab=courses");
         exit;
     } else {
         $error = 'Fehler beim Löschen des Kurses.';
@@ -41,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php include __DIR__ . '/includes/nav.php'; ?>
 
     <main class="container mt-4">
-        <h2 class="mb-4">Kurs löschen</h2>
+        <h2 class="mb-4">Kurs löschen (Admin)</h2>
 
         <?php if (isset($error)): ?>
             <div class="alert alert-danger">
@@ -50,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
 
         <div class="alert alert-warning col-lg-6">
-            <strong>Warnung!</strong> Du wirst den Kurs permanent löschen:
+            <strong>Warnung!</strong> Du wirst folgenden Kurs permanent löschen:
             <br><br>
             <strong><?php echo htmlspecialchars($course['title']); ?></strong>
             <br><br>
@@ -62,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <button type="submit" class="btn btn-danger btn-lg">
                     Ja, Kurs löschen
                 </button>
-                <a href="course-details.php?id=<?php echo $course_id; ?>" class="btn btn-secondary btn-lg">
+                <a href="admin.php?tab=courses" class="btn btn-secondary btn-lg">
                     Abbrechen
                 </a>
             </div>

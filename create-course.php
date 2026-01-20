@@ -1,16 +1,13 @@
 <?php
-require __DIR__ . '/util/auth.php';
-startAuthSession();
+require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/util/db_courses.php';
+require_once __DIR__ . '/util/auth_helper.php';
 
-// Nur eingeloggte Benutzer dürfen Kurse erstellen
-if (empty($_SESSION['user_id'])) {
-    header('Location: login.php');
-    exit;
-}
+// Nur eingeloggte User dürfen Kurse erstellen
+requireLogin();
 
 $errors = [];
 $success = '';
-
 $title = '';
 $description = '';
 $content = '';
@@ -19,23 +16,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $title = trim($_POST['title'] ?? '');
     $description = trim($_POST['description'] ?? '');
     $content = trim($_POST['content'] ?? '');
-
-    if ($title === '' || $description === '' || $content === '') {
-        $errors[] = 'Bitte alle Felder ausfüllen.';
+    
+    // Validierung
+    if (!$title) {
+        $errors[] = 'Kurstitel ist erforderlich.';
     }
-
-    // Später mehr Validierung, z. B. Länge, HTML, etc.
-
+    
+    if (strlen($title) < 3) {
+        $errors[] = 'Kurstitel muss mindestens 3 Zeichen lang sein.';
+    }
+    
+    if (strlen($title) > 150) {
+        $errors[] = 'Kurstitel darf maximal 150 Zeichen lang sein.';
+    }
+    
+    if (!$description) {
+        $errors[] = 'Kursbeschreibung ist erforderlich.';
+    }
+    
+    if (strlen($description) < 10) {
+        $errors[] = 'Kursbeschreibung muss mindestens 10 Zeichen lang sein.';
+    }
+    
+    // Keine Fehler? Speichern!
     if (empty($errors)) {
-        // SPÄTER: Speichern in Datenbank
-        // $stmt = $pdo->prepare('INSERT INTO courses ...');
-
-        $success = 'Kurs wurde (demo-mäßig) erstellt. Die echte Speicherung in der Datenbank folgt später.';
+        $course_id = createCourse($title, $description, $content, getCurrentUserId());
         
-        // Optional Felder leeren nach Erfolg
-        $title = '';
-        $description = '';
-        $content = '';
+        if ($course_id) {
+            $success = 'Kurs erfolgreich erstellt!';
+            // Nach 2 Sekunden zur Course Details Seite
+            header("refresh:2;url=course-details.php?id=$course_id");
+            $title = '';
+            $description = '';
+            $content = '';
+        } else {
+            $errors[] = 'Fehler beim Erstellen des Kurses. Bitte versuche es später erneut.';
+        }
     }
 }
 ?>
@@ -44,54 +60,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kurs erstellen - SimpleLearn</title>
+    <title>Neuer Kurs - SimpleLearn</title>
     <?php include __DIR__ . '/includes/head-includes.php'; ?>
 </head>
 <body>
-<?php include __DIR__ . '/includes/header.php'; ?>
-<?php include __DIR__ . '/includes/nav.php'; ?>
+    <?php include __DIR__ . '/includes/header.php'; ?>
+    <?php include __DIR__ . '/includes/nav.php'; ?>
 
-<main class="container mt-4">
-    <h2 class="mb-4">Neuen Kurs erstellen</h2>
+    <main class="container mt-4">
+        <h2 class="mb-4">Neuer Kurs</h2>
 
-    <?php if (!empty($success)): ?>
-        <div class="alert alert-success">
-            <?php echo htmlspecialchars($success); ?>
+        <?php if (!empty($success)): ?>
+            <div class="alert alert-success">
+                <?php echo htmlspecialchars($success); ?>
+                <br>
+                <small>Du wirst in Kürze weitergeleitet...</small>
+            </div>
+        <?php endif; ?>
+
+        <?php if (!empty($errors)): ?>
+            <div class="alert alert-danger">
+                <?php foreach ($errors as $e): ?>
+                    <div><?php echo htmlspecialchars($e); ?></div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+
+        <form method="post" class="col-lg-8">
+            <div class="mb-3">
+                <label class="form-label">Kurstitel <span class="text-danger">*</span></label>
+                <input type="text" name="title" class="form-control" 
+                       value="<?php echo htmlspecialchars($title); ?>" 
+                       maxlength="150" required>
+                <small class="form-text text-muted">Max. 150 Zeichen</small>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Kursbeschreibung <span class="text-danger">*</span></label>
+                <textarea name="description" class="form-control" rows="4" 
+                          maxlength="1000" required><?php echo htmlspecialchars($description); ?></textarea>
+                <small class="form-text text-muted">Max. 1000 Zeichen</small>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Kursinhalt</label>
+                <textarea name="content" class="form-control" rows="10" 
+                          placeholder="Gib hier den Inhalt deines Kurses ein (HTML wird nicht interpretiert)"><?php echo htmlspecialchars($content); ?></textarea>
+                <small class="form-text text-muted">Optional - kann später bearbeitet werden</small>
+            </div>
+
+            <div class="mb-3">
+                <button type="submit" class="btn btn-primary btn-lg">Kurs erstellen</button>
+                <a href="index.php" class="btn btn-secondary btn-lg">Abbrechen</a>
+            </div>
+        </form>
+
+        <div class="alert alert-info mt-4 col-lg-8">
+            <strong>Hinweis:</strong> Nach dem Erstellen kannst du Aufgaben und Dateien hinzufügen.
         </div>
-    <?php endif; ?>
+    </main>
 
-    <?php if (!empty($errors)): ?>
-        <div class="alert alert-danger">
-            <?php foreach ($errors as $e): ?>
-                <div><?php echo htmlspecialchars($e); ?></div>
-            <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
-
-    <form method="post">
-        <div class="mb-3">
-            <label class="form-label">Kurstitel</label>
-            <input type="text" name="title" class="form-control"
-                   value="<?php echo htmlspecialchars($title); ?>"
-                   required>
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Kurzbeschreibung</label>
-            <textarea name="description" class="form-control" rows="2"
-                      required><?php echo htmlspecialchars($description); ?></textarea>
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Inhalte / Beschreibung</label>
-            <textarea name="content" class="form-control" rows="5"
-                      required><?php echo htmlspecialchars($content); ?></textarea>
-        </div>
-
-        <button type="submit" class="btn btn-primary">Kurs erstellen</button>
-    </form>
-</main>
-
-<?php include __DIR__ . '/includes/footer.php'; ?>
+    <?php include __DIR__ . '/includes/footer.php'; ?>
 </body>
 </html>

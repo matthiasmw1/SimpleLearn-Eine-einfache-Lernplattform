@@ -1,46 +1,26 @@
 <?php
-require __DIR__ . '/util/auth.php';
-startAuthSession();
-
-// Fake-User "Datenbank" – gleich wie beim Login
-$fakeUsers = [
-    [
-        'id' => 1,
-        'username' => 'testUser',
-        'email' => 'example@example.org',
-        'password_hash' => '$2y$10$QqSCJCBQJfXzsN91SwbYWe6TaD51M7eLeLdFzE8mBlwwv9qZ7sG9u',
-        'role' => 'user'
-    ]
-];
-
-function findUser($usernameOrEmail, $fakeUsers) {
-    foreach ($fakeUsers as $u) {
-        if ($u['username'] === $usernameOrEmail || $u['email'] === $usernameOrEmail) {
-            return $u;
-        }
-    }
-    return null;
-}
+require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/util/db_users.php';
 
 $errors = [];
 $success = '';
+$username = '';
+$email = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
-    $passwordRepeat = $_POST['password_repeat'] ?? '';
+    $password_repeat = $_POST['password_repeat'] ?? '';
+    
 
-    // Basis-Validierung
-    if ($username === '' || $email === '' || $password === '' || $passwordRepeat === '') {
+    if (!$username || !$email || !$password || !$password_repeat) {
         $errors[] = 'Bitte alle Felder ausfüllen.';
     }
-
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $errors[] = 'Bitte eine gültige E-Mail-Adresse eingeben.';
     }
-
-    if ($password !== $passwordRepeat) {
+    if ($password !== $password_repeat) {
         $errors[] = 'Die Passwörter stimmen nicht überein.';
     }
     if (strlen($password) < 6) {
@@ -52,31 +32,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!preg_match('/[A-Z]/', $password)) {
         $errors[] = 'Das Passwort muss mindestens einen Großbuchstaben enthalten.';
     }
-    if (!preg_match('/\d/', $password)) {
+    if (!preg_match('/[0-9]/', $password)) {
         $errors[] = 'Das Passwort muss mindestens eine Zahl enthalten.';
     }
-    if (!preg_match('/[^a-zA-Z\d]/', $password)) {
-        $errors[] = 'Das Passwort muss mindestens ein Sonderzeichen enthalten.';
+    if (userExists($username, $email)) {
+        $errors[] = 'Benutzername oder E-Mail ist bereits registriert.';
     }
-
-
-    // Prüfen, ob User/Email schon existieren (in Fake-DB)
-    foreach ($fakeUsers as $u) {
-        if ($u['username'] === $username) {
-            $errors[] = 'Benutzername ist bereits vergeben.';
-        }
-        if ($u['email'] === $email) {
-            $errors[] = 'E-Mail ist bereits registriert.';
-        }
-    }
-
-    // Wenn alles ok ist:
     if (empty($errors)) {
-        // Hier würde später der DB-Insert passieren
-        // $passwordHash = password_hash($password, PASSWORD_DEFAULT);
-        // INSERT INTO users ...
-
-        $success = 'Registrierung erfolgreich! Du kannst dich jetzt mit deinen Daten einloggen (Speicherung in DB folgt später).';
+        if (createUser($username, $email, $password)) {
+            $success = 'Registrierung erfolgreich! Du kannst dich jetzt einloggen.';
+            $username = '';
+            $email = '';
+        } else {
+            $errors[] = 'Registrierung fehlgeschlagen. Bitte versuche es später erneut.';
+        }
     }
 }
 ?>
@@ -89,55 +58,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php include __DIR__ . '/includes/head-includes.php'; ?>
 </head>
 <body>
-<?php include __DIR__ . '/includes/header.php'; ?>
-<?php include __DIR__ . '/includes/nav.php'; ?>
+    <?php include __DIR__ . '/includes/header.php'; ?>
+    <?php include __DIR__ . '/includes/nav.php'; ?>
 
-<main class="container mt-4">
-    <h2 class="mb-4">Registrierung</h2>
+    <main class="container mt-4">
+        <h2 class="mb-4">Registrierung</h2>
 
-    <?php if (!empty($success)): ?>
-        <div class="alert alert-success">
-            <?php echo htmlspecialchars($success); ?>
-        </div>
-    <?php endif; ?>
+        <?php if (!empty($success)): ?>
+            <div class="alert alert-success">
+                <?php echo htmlspecialchars($success); ?>
+            </div>
+        <?php endif; ?>
 
-    <?php if (!empty($errors)): ?>
-        <div class="alert alert-danger">
-            <?php foreach ($errors as $e): ?>
-                <div><?php echo htmlspecialchars($e); ?></div>
-            <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
+        <?php if (!empty($errors)): ?>
+            <div class="alert alert-danger">
+                <?php foreach ($errors as $e): ?>
+                    <div><?php echo htmlspecialchars($e); ?></div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
 
-    <form method="post">
-        <div class="mb-3">
-            <label class="form-label">Benutzername</label>
-            <input type="text" name="username" class="form-control"
-                   value="<?php echo htmlspecialchars($username ?? ''); ?>"
-                   required>
-        </div>
+        <form method="post" class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Benutzername</label>
+                <input type="text" name="username" class="form-control" 
+                       value="<?php echo htmlspecialchars($username); ?>" required>
+            </div>
 
-        <div class="mb-3">
-            <label class="form-label">E-Mail</label>
-            <input type="email" name="email" class="form-control"
-                   value="<?php echo htmlspecialchars($email ?? ''); ?>"
-                   required>
-        </div>
+            <div class="mb-3">
+                <label class="form-label">E-Mail</label>
+                <input type="email" name="email" class="form-control" 
+                       value="<?php echo htmlspecialchars($email); ?>" required>
+            </div>
 
-        <div class="mb-3">
-            <label class="form-label">Passwort</label>
-            <input type="password" name="password" class="form-control" required>
-        </div>
+            <div class="mb-3">
+                <label class="form-label">Passwort</label>
+                <input type="password" name="password" class="form-control" required>
+                <small class="form-text text-muted">
+                    Mindestens 6 Zeichen, mit Groß- und Kleinbuchstaben und Ziffer
+                </small>
+            </div>
 
-        <div class="mb-3">
-            <label class="form-label">Passwort wiederholen</label>
-            <input type="password" name="password_repeat" class="form-control" required>
-        </div>
+            <div class="mb-3">
+                <label class="form-label">Passwort wiederholen</label>
+                <input type="password" name="password_repeat" class="form-control" required>
+            </div>
 
-        <button type="submit" class="btn btn-primary">Registrieren</button>
-    </form>
-</main>
+            <button type="submit" class="btn btn-primary">Registrieren</button>
+        </form>
 
-<?php include __DIR__ . '/includes/footer.php'; ?>
+        <p class="mt-3">
+            Bereits registriert? <a href="login.php">Zum Login</a>
+        </p>
+    </main>
+
+    <?php include __DIR__ . '/includes/footer.php'; ?>
 </body>
 </html>

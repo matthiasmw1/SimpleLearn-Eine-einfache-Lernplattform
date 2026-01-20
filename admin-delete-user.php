@@ -1,30 +1,38 @@
 <?php
 require_once __DIR__ . '/config.php';
-require_once __DIR__ . '/util/db_courses.php';
 require_once __DIR__ . '/util/auth_helper.php';
+require_once __DIR__ . '/util/db_users.php';
 
 requireLogin();
 
-$course_id = $_GET['id'] ?? null;
-
-if (!$course_id || !is_numeric($course_id)) {
+if (!isAdmin()) {
     header("Location: index.php");
     exit;
 }
 
-$course = getCourseById($course_id);
+$user_id = $_GET['id'] ?? null;
 
-if (!$course || !canEditCourse($course_id)) {
-    header("Location: index.php");
+if (!$user_id || !is_numeric($user_id)) {
+    header("Location: admin.php");
+    exit;
+}
+
+$user = getUserById($user_id);
+
+if (!$user || $user_id === getCurrentUserId()) {
+    header("Location: admin.php");
     exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (deleteCourse($course_id)) {
-        header("Location: index.php?message=Kurs gelöscht");
-        exit;
-    } else {
-        $error = 'Fehler beim Löschen des Kurses.';
+    try {
+        $stmt = $GLOBALS['pdo']->prepare("DELETE FROM users WHERE id = ?");
+        if ($stmt->execute([$user_id])) {
+            header("Location: admin.php?tab=users");
+            exit;
+        }
+    } catch (PDOException $e) {
+        $error = 'Fehler beim Löschen.';
     }
 }
 ?>
@@ -33,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kurs löschen - SimpleLearn</title>
+    <title>Benutzer löschen - SimpleLearn</title>
     <?php include __DIR__ . '/includes/head-includes.php'; ?>
 </head>
 <body>
@@ -41,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php include __DIR__ . '/includes/nav.php'; ?>
 
     <main class="container mt-4">
-        <h2 class="mb-4">Kurs löschen</h2>
+        <h2 class="mb-4">Benutzer löschen</h2>
 
         <?php if (isset($error)): ?>
             <div class="alert alert-danger">
@@ -50,19 +58,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
 
         <div class="alert alert-warning col-lg-6">
-            <strong>Warnung!</strong> Du wirst den Kurs permanent löschen:
+            <strong>Warnung!</strong> Du wirst folgenden Benutzer permanent löschen:
             <br><br>
-            <strong><?php echo htmlspecialchars($course['title']); ?></strong>
+            <strong><?php echo htmlspecialchars($user['username']); ?></strong> (<?php echo htmlspecialchars($user['email']); ?>)
             <br><br>
+            Alle Kurse und Aufgaben dieses Benutzers werden ebenfalls gelöscht!<br>
             Diese Aktion kann <strong>NICHT</strong> rückgängig gemacht werden!
         </div>
 
         <form method="post" class="col-lg-6">
             <div class="mb-3">
                 <button type="submit" class="btn btn-danger btn-lg">
-                    Ja, Kurs löschen
+                    Ja, Benutzer löschen
                 </button>
-                <a href="course-details.php?id=<?php echo $course_id; ?>" class="btn btn-secondary btn-lg">
+                <a href="admin.php?tab=users" class="btn btn-secondary btn-lg">
                     Abbrechen
                 </a>
             </div>

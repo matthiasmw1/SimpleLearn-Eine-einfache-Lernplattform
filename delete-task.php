@@ -1,30 +1,36 @@
 <?php
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/util/db_tasks.php';
 require_once __DIR__ . '/util/db_courses.php';
 require_once __DIR__ . '/util/auth_helper.php';
 
 requireLogin();
 
-$course_id = $_GET['id'] ?? null;
+$task_id = $_GET['id'] ?? null;
 
-if (!$course_id || !is_numeric($course_id)) {
+if (!$task_id || !is_numeric($task_id)) {
     header("Location: index.php");
     exit;
 }
 
-$course = getCourseById($course_id);
+$task = getTaskById($task_id);
 
-if (!$course || !canEditCourse($course_id)) {
+if (!$task) {
+    header("Location: index.php");
+    exit;
+}
+
+if (!canEditCourse($task['course_id'])) {
     header("Location: index.php");
     exit;
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (deleteCourse($course_id)) {
-        header("Location: index.php?message=Kurs gelöscht");
+    if (deleteTask($task_id)) {
+        header("Location: course-details.php?id=" . $task['course_id']);
         exit;
     } else {
-        $error = 'Fehler beim Löschen des Kurses.';
+        $error = 'Fehler beim Löschen der Aufgabe.';
     }
 }
 ?>
@@ -33,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kurs löschen - SimpleLearn</title>
+    <title>Aufgabe löschen - SimpleLearn</title>
     <?php include __DIR__ . '/includes/head-includes.php'; ?>
 </head>
 <body>
@@ -41,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php include __DIR__ . '/includes/nav.php'; ?>
 
     <main class="container mt-4">
-        <h2 class="mb-4">Kurs löschen</h2>
+        <h2 class="mb-4">Aufgabe löschen</h2>
 
         <?php if (isset($error)): ?>
             <div class="alert alert-danger">
@@ -50,9 +56,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
 
         <div class="alert alert-warning col-lg-6">
-            <strong>Warnung!</strong> Du wirst den Kurs permanent löschen:
+            <strong>Warnung!</strong> Du wirst die Aufgabe permanent löschen:
             <br><br>
-            <strong><?php echo htmlspecialchars($course['title']); ?></strong>
+            <strong><?php echo htmlspecialchars($task['title']); ?></strong>
             <br><br>
             Diese Aktion kann <strong>NICHT</strong> rückgängig gemacht werden!
         </div>
@@ -60,9 +66,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <form method="post" class="col-lg-6">
             <div class="mb-3">
                 <button type="submit" class="btn btn-danger btn-lg">
-                    Ja, Kurs löschen
+                    Ja, Aufgabe löschen
                 </button>
-                <a href="course-details.php?id=<?php echo $course_id; ?>" class="btn btn-secondary btn-lg">
+                <a href="course-details.php?id=<?php echo $task['course_id']; ?>" class="btn btn-secondary btn-lg">
                     Abbrechen
                 </a>
             </div>
