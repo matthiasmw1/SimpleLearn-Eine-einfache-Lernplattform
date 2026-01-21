@@ -51,12 +51,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <form method="post" class="col-md-6" autocomplete="off">
             <div class="mb-3">
                 <label class="form-label">Benutzername oder E-Mail</label>
-                <input type="text" name="username_or_email" class="form-control" required autofocus>
+                <input type="text" name="username_or_email" class="form-control" autocomplete="off" required autofocus>
             </div>
 
             <div class="mb-3">
                 <label class="form-label">Passwort</label>
-                <input type="password" name="password" class="form-control" required>
+                <input type="password" name="password" class="form-control" autocomplete="off" required>
             </div>
 
             <button type="submit" class="btn btn-primary">Einloggen</button>

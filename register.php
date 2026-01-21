@@ -82,18 +82,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="mb-3">
                 <label class="form-label">Benutzername</label>
                 <input type="text" name="username" class="form-control" 
-                       value="<?php echo htmlspecialchars($username); ?>" required>
+                       value="<?php echo htmlspecialchars($username); ?>" autocomplete="off" required>
             </div>
 
             <div class="mb-3">
                 <label class="form-label">E-Mail</label>
                 <input type="email" name="email" class="form-control" 
-                       value="<?php echo htmlspecialchars($email); ?>" required>
+                       value="<?php echo htmlspecialchars($email); ?>" autocomplete="off" required>
             </div>
 
             <div class="mb-3">
                 <label class="form-label">Passwort</label>
-                <input type="password" name="password" class="form-control" required>
+                <input type="password" name="password" class="form-control" autocomplete="off" required>
                 <small class="form-text text-muted">
                     Mindestens 6 Zeichen, mit Groß- und Kleinbuchstaben und Ziffer
                 </small>
@@ -101,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div class="mb-3">
                 <label class="form-label">Passwort wiederholen</label>
-                <input type="password" name="password_repeat" class="form-control" required>
+                <input type="password" name="password_repeat" class="form-control" autocomplete="off" required>
             </div>
 
             <button type="submit" class="btn btn-primary">Registrieren</button>
