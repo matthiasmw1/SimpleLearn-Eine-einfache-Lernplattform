@@ -2,6 +2,7 @@
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/util/db_courses.php';
 require_once __DIR__ . '/util/db_tasks.php';
+require_once __DIR__ . '/util/db_files.php';
 require_once __DIR__ . '/util/auth_helper.php';
 
 // Course ID aus URL
@@ -20,6 +21,7 @@ if (!$course) {
 }
 
 $tasks = getTasksByCourseId($course_id);
+$files = getFilesByCourseId($course_id);
 $can_edit = isLoggedIn() && canEditCourse($course_id);
 ?>
 <!DOCTYPE html>
@@ -47,12 +49,16 @@ $can_edit = isLoggedIn() && canEditCourse($course_id);
             <?php if ($can_edit): ?>
                 <div class="col-auto">
                     <a href="edit-course.php?id=<?php echo $course_id; ?>" class="btn btn-warning">
-                        ✏️ Bearbeiten
+                        Bearbeiten
                     </a>
-                    <a href="delete-course.php?id=<?php echo $course_id; ?>" class="btn btn-danger"
-                       onclick="return confirm('Wirklich löschen?')">
-                        🗑️ Löschen
-                    </a>
+                    <form method="post" action="delete-item.php" style="display: inline;">
+                        <input type="hidden" name="course_id" value="<?php echo $course_id; ?>">
+                        <input type="hidden" name="action" value="delete_course">
+                        <button type="submit" class="btn btn-danger" 
+                                onclick="return confirm('Kurs wirklich löschen?')">
+                            Löschen
+                        </button>
+                    </form>
                 </div>
             <?php endif; ?>
         </div>
@@ -87,7 +93,7 @@ $can_edit = isLoggedIn() && canEditCourse($course_id);
                         <h5 class="card-title mb-0">Aufgaben (<?php echo count($tasks); ?>)</h5>
                         <?php if ($can_edit): ?>
                             <a href="create-task.php?course_id=<?php echo $course_id; ?>" class="btn btn-sm btn-primary">
-                                + Neue Aufgabe
+                                Neue Aufgabe
                             </a>
                         <?php endif; ?>
                     </div>
@@ -121,14 +127,68 @@ $can_edit = isLoggedIn() && canEditCourse($course_id);
                                                 <div>
                                                     <a href="edit-task.php?id=<?php echo $task['id']; ?>" 
                                                        class="btn btn-sm btn-warning">
-                                                        ✏️
+                                                        Bearbeiten
                                                     </a>
-                                                    <a href="delete-task.php?id=<?php echo $task['id']; ?>" 
-                                                       class="btn btn-sm btn-danger"
-                                                       onclick="return confirm('Wirklich löschen?')">
-                                                        🗑️
-                                                    </a>
+                                                    <form method="post" action="delete-item.php" style="display: inline;">
+                                                        <input type="hidden" name="task_id" value="<?php echo $task['id']; ?>">
+                                                        <input type="hidden" name="action" value="delete_task">
+                                                        <input type="hidden" name="redirect_url" value="course-details.php?id=<?php echo $course_id; ?>">
+                                                        <button type="submit" class="btn btn-sm btn-danger"
+                                                                onclick="return confirm('Aufgabe wirklich löschen?')">
+                                                            Löschen
+                                                        </button>
+                                                    </form>
                                                 </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Dateien -->
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">Dateien (<?php echo count($files); ?>)</h5>
+                        <?php if ($can_edit): ?>
+                            <a href="upload-file.php?course_id=<?php echo $course_id; ?>" class="btn btn-sm btn-primary">
+                                Datei hochladen
+                            </a>
+                        <?php endif; ?>
+                    </div>
+                    <div class="card-body">
+                        <?php if (empty($files)): ?>
+                            <p class="text-muted">Keine Dateien vorhanden.</p>
+                        <?php else: ?>
+                            <div class="list-group">
+                                <?php foreach ($files as $file): ?>
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">
+                                                <?php echo htmlspecialchars($file['file_name']); ?>
+                                            </h6>
+                                            <small class="text-muted">
+                                                <?php echo round($file['file_size'] / 1024, 2); ?> KB | 
+                                                <?php echo date('d.m.Y H:i', strtotime($file['uploaded_at'])); ?>
+                                            </small>
+                                        </div>
+                                        <div>
+                                            <a href="download-file.php?id=<?php echo $file['id']; ?>" 
+                                               class="btn btn-sm btn-success">
+                                                Download
+                                            </a>
+                                            <?php if ($can_edit): ?>
+                                                <form method="post" action="delete-item.php" style="display: inline;">
+                                                    <input type="hidden" name="file_id" value="<?php echo $file['id']; ?>">
+                                                    <input type="hidden" name="action" value="delete_file">
+                                                    <input type="hidden" name="redirect_url" value="course-details.php?id=<?php echo $course_id; ?>">
+                                                    <button type="submit" class="btn btn-sm btn-danger"
+                                                            onclick="return confirm('Datei wirklich löschen?')">
+                                                        Löschen
+                                                    </button>
+                                                </form>
                                             <?php endif; ?>
                                         </div>
                                     </div>
@@ -164,58 +224,9 @@ $can_edit = isLoggedIn() && canEditCourse($course_id);
                         </p>
                         <hr>
                         <a href="index.php" class="btn btn-secondary w-100">
-                            ← Zurück zu Kursen
+                            Zurück zu Kursen
                         </a>
                     </div>
-                </div>
-            </div>
-            <!-- Dateien -->
-            <div class="card mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">Dateien (<?php echo $course['file_count']; ?>)</h5>
-                    <?php if ($can_edit): ?>
-                        <a href="upload-file.php?course_id=<?php echo $course_id; ?>" class="btn btn-sm btn-primary">
-                            📤 Datei hochladen
-                        </a>
-                    <?php endif; ?>
-                </div>
-                <div class="card-body">
-                    <?php 
-                    require_once __DIR__ . '/util/db_files.php';
-                    $files = getFilesByCourseId($course_id);
-                    ?>
-                    <?php if (empty($files)): ?>
-                        <p class="text-muted">Keine Dateien vorhanden.</p>
-                    <?php else: ?>
-                        <div class="list-group">
-                            <?php foreach ($files as $file): ?>
-                                <div class="list-group-item d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <h6 class="mb-1">
-                                            📄 <?php echo htmlspecialchars($file['file_name']); ?>
-                                        </h6>
-                                        <small class="text-muted">
-                                            <?php echo round($file['file_size'] / 1024, 2); ?> KB | 
-                                            <?php echo date('d.m.Y H:i', strtotime($file['uploaded_at'])); ?>
-                                        </small>
-                                    </div>
-                                    <div>
-                                        <a href="download-file.php?id=<?php echo $file['id']; ?>" 
-                                           class="btn btn-sm btn-success">
-                                            ⬇️ Download
-                                        </a>
-                                        <?php if ($can_edit): ?>
-                                            <a href="delete-file.php?id=<?php echo $file['id']; ?>" 
-                                               class="btn btn-sm btn-danger"
-                                               onclick="return confirm('Wirklich löschen?')">
-                                                🗑️
-                                            </a>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php endif; ?>
                 </div>
             </div>
         </div>

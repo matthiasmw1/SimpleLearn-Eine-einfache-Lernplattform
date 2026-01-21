@@ -3,7 +3,6 @@ require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/util/db_courses.php';
 require_once __DIR__ . '/util/db_files.php';
 require_once __DIR__ . '/util/auth_helper.php';
-require_once __DIR__ . '/util/upload_handler.php';
 
 requireLogin();
 
@@ -22,40 +21,69 @@ if (!$course || !canEditCourse($course_id)) {
 }
 
 $errors = [];
-$success = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    
-    if (!isset($_FILES['file'])) {
-        $errors[] = 'Bitte wähle eine Datei aus.';
+
+    if (!isset($_FILES['file']) || $_FILES['file']['error'] === UPLOAD_ERR_NO_FILE) {
+        $errors[] = 'Bitte waehle eine Datei aus.';
     } else {
-        // Validierung und Speichern mit neuem Handler
-        $upload_result = UploadHandler::save($_FILES['file'], 'course_material', $course_id . '/');
-        
-        if ($upload_result['success']) {
-            // In DB speichern
-            $file_id = uploadFile(
-                $course_id,
-                $upload_result['original_name'],
-                $upload_result['public_path'],
-                $upload_result['size'],
-                $upload_result['mime_type']
-            );
-            
-            if ($file_id) {
-                $success = '✅ Datei erfolgreich hochgeladen!';
-                header("refresh:2;url=course-details.php?id=$course_id");
-            } else {
-                $errors[] = 'Fehler beim Speichern in der Datenbank.';
-                UploadHandler::delete($upload_result['public_path'], 'course_material');
+        $file = $_FILES['file'];
+
+        if ($file['size'] > 5 * 1024 * 1024) {
+            $errors[] = 'Datei zu gross (max. 5 MB).';
+        }
+
+        $allowed_types = [
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'image/jpeg',
+            'image/png',
+            'image/gif'
+        ];
+
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $file_type = finfo_file($finfo, $file['tmp_name']);
+        finfo_close($finfo);
+
+        if (!in_array($file_type, $allowed_types)) {
+            $errors[] = 'Dateityp nicht erlaubt. Nur PDF, DOCX, DOC, JPG, PNG, GIF.';
+        }
+
+        if (empty($errors)) {
+            $upload_dir = __DIR__ . '/uploads/courses/' . $course_id . '/';
+
+            if (!is_dir($upload_dir)) {
+                mkdir($upload_dir, 0755, true);
             }
-        } else {
-            $errors[] = $upload_result['error'];
+
+            $original_name = basename($file['name']);
+            $ext = strtolower(pathinfo($original_name, PATHINFO_EXTENSION));
+            $new_filename = uniqid() . '_' . time() . '.' . $ext;
+            $file_path = $upload_dir . $new_filename;
+
+            if (move_uploaded_file($file['tmp_name'], $file_path)) {
+                $file_id = uploadFile(
+                    $course_id,
+                    $original_name,
+                    '/uploads/courses/' . $course_id . '/' . $new_filename,
+                    $file['size'],
+                    $file_type
+                );
+
+                if ($file_id) {
+                    header("Location: course-details.php?id=$course_id");
+                    exit;
+                } else {
+                    $errors[] = 'Fehler beim Speichern in der Datenbank.';
+                    unlink($file_path);
+                }
+            } else {
+                $errors[] = 'Fehler beim Hochladen der Datei.';
+            }
         }
     }
 }
-
-$allowed_extensions = UploadHandler::getAllowedExtensions('course_material');
 ?>
 <!DOCTYPE html>
 <html lang="de">
@@ -70,20 +98,12 @@ $allowed_extensions = UploadHandler::getAllowedExtensions('course_material');
     <?php include __DIR__ . '/includes/nav.php'; ?>
 
     <main class="container mt-4">
-        <h2 class="mb-4">📤 Datei hochladen für: <?php echo htmlspecialchars($course['title']); ?></h2>
-
-        <?php if (!empty($success)): ?>
-            <div class="alert alert-success">
-                <?php echo htmlspecialchars($success); ?>
-                <br>
-                <small>Du wirst in Kürze weitergeleitet...</small>
-            </div>
-        <?php endif; ?>
+        <h2 class="mb-4">Datei hochladen fuer: <?php echo htmlspecialchars($course['title']); ?></h2>
 
         <?php if (!empty($errors)): ?>
             <div class="alert alert-danger">
-                <?php foreach ($errors as $e): ?>
-                    <div>❌ <?php echo htmlspecialchars($e); ?></div>
+                <?php foreach ($errors as $error): ?>
+                    <div><?php echo htmlspecialchars($error); ?></div>
                 <?php endforeach; ?>
             </div>
         <?php endif; ?>
@@ -92,18 +112,18 @@ $allowed_extensions = UploadHandler::getAllowedExtensions('course_material');
             <div class="card-body">
                 <form method="post" enctype="multipart/form-data">
                     <div class="mb-3">
-                        <label class="form-label"><strong>Datei auswählen</strong></label>
+                        <label class="form-label"><strong>Datei auswaehlen</strong></label>
                         <input type="file" name="file" class="form-control" required
-                               accept="<?php echo $allowed_extensions; ?>">
+                               accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif">
                         <small class="form-text text-muted d-block mt-2">
                             <strong>Erlaubte Dateitypen:</strong> PDF, DOCX, DOC, JPG, PNG, GIF<br>
-                            <strong>Maximum Dateigröße:</strong> 5 MB
+                            <strong>Maximum:</strong> 5 MB
                         </small>
                     </div>
 
                     <div class="mb-3">
                         <button type="submit" class="btn btn-primary btn-lg">
-                            📤 Datei hochladen
+                            Datei hochladen
                         </button>
                         <a href="course-details.php?id=<?php echo $course_id; ?>" class="btn btn-secondary btn-lg">
                             Abbrechen
@@ -111,10 +131,6 @@ $allowed_extensions = UploadHandler::getAllowedExtensions('course_material');
                     </div>
                 </form>
             </div>
-        </div>
-
-        <div class="alert alert-info mt-4 col-lg-8">
-            <strong>💡 Hinweis:</strong> Lade hier Lernmaterialien (PDFs, Dokumente, Bilder) hoch, die deine Kursteilnehmer herunterladen können.
         </div>
     </main>
 

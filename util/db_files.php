@@ -1,9 +1,5 @@
 <?php
-// util/db_files.php - erweitert
 
-/**
- * Holt alle Dateien eines Kurses
- */
 function getFilesByCourseId($course_id) {
     global $pdo;
     
@@ -12,9 +8,7 @@ function getFilesByCourseId($course_id) {
     return $stmt->fetchAll();
 }
 
-/**
- * Holt eine einzelne Datei
- */
+
 function getFileById($id) {
     global $pdo;
     
@@ -23,9 +17,7 @@ function getFileById($id) {
     return $stmt->fetch();
 }
 
-/**
- * Speichert eine neue Datei in der DB
- */
+
 function uploadFile($course_id, $file_name, $file_path, $file_size, $file_type) {
     global $pdo;
     
@@ -42,9 +34,7 @@ function uploadFile($course_id, $file_name, $file_path, $file_size, $file_type) 
     }
 }
 
-/**
- * Löscht eine Datei
- */
+
 function deleteFile($id) {
     global $pdo;
     
@@ -57,9 +47,6 @@ function deleteFile($id) {
     }
 }
 
-/**
- * Format: Dateisize schön anzeigen (KB, MB)
- */
 function formatFileSize($bytes) {
     if ($bytes >= 1048576) {
         return round($bytes / 1048576, 2) . ' MB';
@@ -70,9 +57,6 @@ function formatFileSize($bytes) {
     }
 }
 
-/**
- * Icon basierend auf MIME-Type
- */
 function getFileIcon($mime_type) {
     $icons = [
         'application/pdf' => '📄',

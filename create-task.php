@@ -22,7 +22,6 @@ if (!$course || !canEditCourse($course_id)) {
 }
 
 $errors = [];
-$success = '';
 $title = '';
 $description = '';
 $due_date = date('Y-m-d', strtotime('+7 days'));
@@ -59,11 +58,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $task_id = createTask($course_id, $title, $description, $due_date);
         
         if ($task_id) {
-            $success = 'Aufgabe erfolgreich erstellt!';
-            header("refresh:2;url=course-details.php?id=$course_id");
-            $title = '';
-            $description = '';
-            $due_date = date('Y-m-d', strtotime('+7 days'));
+            header("Location: course-details.php?id=$course_id");
+            exit;
         } else {
             $errors[] = 'Fehler beim Erstellen der Aufgabe. Bitte versuche es später erneut.';
         }
@@ -83,15 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php include __DIR__ . '/includes/nav.php'; ?>
 
     <main class="container mt-4">
-        <h2 class="mb-4">Neue Aufgabe für: <?php echo htmlspecialchars($course['title']); ?></h2>
-
-        <?php if (!empty($success)): ?>
-            <div class="alert alert-success">
-                <?php echo htmlspecialchars($success); ?>
-                <br>
-                <small>Du wirst in Kürze weitergeleitet...</small>
-            </div>
-        <?php endif; ?>
+        <h2 class="mb-4">Neue Aufgabe fuer: <?php echo htmlspecialchars($course['title']); ?></h2>
 
         <?php if (!empty($errors)): ?>
             <div class="alert alert-danger">

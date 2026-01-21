@@ -66,11 +66,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             Noch kein Konto? <a href="register.php">Jetzt registrieren</a>
         </p>
 
-        <div class="alert alert-info mt-4">
-            <strong>Test-Daten:</strong><br>
-            Admin: admin / admin123<br>
-            User: testuser / test123
-        </div>
     </main>
 
     <?php include __DIR__ . '/includes/footer.php'; ?>

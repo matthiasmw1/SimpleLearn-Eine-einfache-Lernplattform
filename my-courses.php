@@ -27,7 +27,7 @@ $courses = getCoursesByUserId(getCurrentUserId());
             </div>
             <div class="col-auto">
                 <a href="create-course.php" class="btn btn-success btn-lg">
-                    + Neuer Kurs
+                    Neuer Kurs
                 </a>
             </div>
         </div>
@@ -55,23 +55,26 @@ $courses = getCoursesByUserId(getCurrentUserId());
                                 </p>
                                 <div class="mb-2">
                                     <small class="text-muted">
-                                        📝 <?php echo $course['task_count']; ?> Aufgaben
+                                        <?php echo $course['task_count']; ?> Aufgaben
                                     </small>
                                 </div>
                                 <div class="btn-group w-100" role="group">
                                     <a href="course-details.php?id=<?php echo $course['id']; ?>" 
                                        class="btn btn-sm btn-primary">
-                                        👁️ Ansehen
+                                        Ansehen
                                     </a>
                                     <a href="edit-course.php?id=<?php echo $course['id']; ?>" 
                                        class="btn btn-sm btn-warning">
-                                        ✏️ Bearbeiten
+                                        Bearbeiten
                                     </a>
-                                    <a href="delete-course.php?id=<?php echo $course['id']; ?>" 
-                                       class="btn btn-sm btn-danger"
-                                       onclick="return confirm('Wirklich löschen?')">
-                                        🗑️ Löschen
-                                    </a>
+                                    <form method="post" action="delete-item.php" style="display: inline;">
+                                        <input type="hidden" name="course_id" value="<?php echo $course['id']; ?>">
+                                        <input type="hidden" name="action" value="delete_course">
+                                        <button type="submit" class="btn btn-sm btn-danger"
+                                                onclick="return confirm('Kurs wirklich löschen?')">
+                                            Löschen
+                                        </button>
+                                    </form>
                                 </div>
                             </div>
                         </div>

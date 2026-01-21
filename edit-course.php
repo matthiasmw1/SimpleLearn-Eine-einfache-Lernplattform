@@ -20,7 +20,6 @@ if (!$course || !canEditCourse($course_id)) {
 }
 
 $errors = [];
-$success = '';
 $title = $course['title'];
 $description = $course['description'];
 $content = $course['content'];
@@ -44,8 +43,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     if (empty($errors)) {
         if (updateCourse($course_id, $title, $description, $content)) {
-            $success = 'Kurs erfolgreich aktualisiert!';
-            header("refresh:2;url=course-details.php?id=$course_id");
+            header("Location: course-details.php?id=$course_id");
+            exit;
         } else {
             $errors[] = 'Fehler beim Aktualisieren des Kurses.';
         }
@@ -66,14 +65,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <main class="container mt-4">
         <h2 class="mb-4">Kurs bearbeiten</h2>
-
-        <?php if (!empty($success)): ?>
-            <div class="alert alert-success">
-                <?php echo htmlspecialchars($success); ?>
-                <br>
-                <small>Du wirst in Kürze weitergeleitet...</small>
-            </div>
-        <?php endif; ?>
 
         <?php if (!empty($errors)): ?>
             <div class="alert alert-danger">

@@ -7,7 +7,6 @@ require_once __DIR__ . '/util/auth_helper.php';
 requireLogin();
 
 $errors = [];
-$success = '';
 $title = '';
 $description = '';
 $content = '';
@@ -43,12 +42,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $course_id = createCourse($title, $description, $content, getCurrentUserId());
         
         if ($course_id) {
-            $success = 'Kurs erfolgreich erstellt!';
-            // Nach 2 Sekunden zur Course Details Seite
-            header("refresh:2;url=course-details.php?id=$course_id");
-            $title = '';
-            $description = '';
-            $content = '';
+            header("Location: course-details.php?id=$course_id");
+            exit;
         } else {
             $errors[] = 'Fehler beim Erstellen des Kurses. Bitte versuche es später erneut.';
         }
@@ -69,14 +64,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <main class="container mt-4">
         <h2 class="mb-4">Neuer Kurs</h2>
-
-        <?php if (!empty($success)): ?>
-            <div class="alert alert-success">
-                <?php echo htmlspecialchars($success); ?>
-                <br>
-                <small>Du wirst in Kürze weitergeleitet...</small>
-            </div>
-        <?php endif; ?>
 
         <?php if (!empty($errors)): ?>
             <div class="alert alert-danger">
@@ -116,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </form>
 
         <div class="alert alert-info mt-4 col-lg-8">
-            <strong>Hinweis:</strong> Nach dem Erstellen kannst du Aufgaben und Dateien hinzufügen.
+            <strong>Hinweis:</strong> Nach dem Erstellen kannst du Aufgaben und Dateien hinzufuegen.
         </div>
     </main>
 

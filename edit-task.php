@@ -28,7 +28,6 @@ if (!canEditCourse($task['course_id'])) {
 $course = getCourseById($task['course_id']);
 
 $errors = [];
-$success = '';
 $title = $task['title'];
 $description = $task['description'];
 $due_date = $task['due_date'];
@@ -54,8 +53,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     if (empty($errors)) {
         if (updateTask($task_id, $title, $description, $due_date, $status)) {
-            $success = 'Aufgabe erfolgreich aktualisiert!';
-            header("refresh:2;url=course-details.php?id=" . $task['course_id']);
+            header("Location: course-details.php?id=" . $task['course_id']);
+            exit;
         } else {
             $errors[] = 'Fehler beim Aktualisieren der Aufgabe.';
         }
@@ -76,14 +75,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <main class="container mt-4">
         <h2 class="mb-4">Aufgabe bearbeiten</h2>
-
-        <?php if (!empty($success)): ?>
-            <div class="alert alert-success">
-                <?php echo htmlspecialchars($success); ?>
-                <br>
-                <small>Du wirst in Kürze weitergeleitet...</small>
-            </div>
-        <?php endif; ?>
 
         <?php if (!empty($errors)): ?>
             <div class="alert alert-danger">
