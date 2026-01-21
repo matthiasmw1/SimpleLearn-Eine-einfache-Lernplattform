@@ -3,7 +3,6 @@ require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/util/db_courses.php';
 require_once __DIR__ . '/util/auth_helper.php';
 
-// Nur eingeloggte User dürfen Kurse erstellen
 requireLogin();
 
 $errors = [];
@@ -16,7 +15,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $description = trim($_POST['description'] ?? '');
     $content = trim($_POST['content'] ?? '');
     
-    // Validierung
     if (!$title) {
         $errors[] = 'Kurstitel ist erforderlich.';
     }
@@ -37,7 +35,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Kursbeschreibung muss mindestens 10 Zeichen lang sein.';
     }
     
-    // Keine Fehler? Speichern!
     if (empty($errors)) {
         $course_id = createCourse($title, $description, $content, getCurrentUserId());
         

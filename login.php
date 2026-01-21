@@ -17,7 +17,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$user || !password_verify($password, $user['password_hash'])) {
             $errors[] = 'Ungültige Anmeldedaten.';
         } else {
-            // Login erfolgreich
             login($user['id'], $user['username'], $user['role']);
             header("Location: index.php");
             exit;

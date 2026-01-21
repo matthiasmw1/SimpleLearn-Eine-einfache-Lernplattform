@@ -5,7 +5,6 @@ require_once __DIR__ . '/util/db_tasks.php';
 require_once __DIR__ . '/util/db_files.php';
 require_once __DIR__ . '/util/auth_helper.php';
 
-// Course ID aus URL
 $course_id = $_GET['id'] ?? null;
 
 if (!$course_id || !is_numeric($course_id)) {

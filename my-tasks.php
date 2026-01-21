@@ -8,7 +8,7 @@ $user_id = getCurrentUserId();
 $status_filter = $_GET['status'] ?? 'all';
 $sort_by = $_GET['sort'] ?? 'due_date';
 
-// Basis-Query: alle Tasks aus Kursen, die dieser User erstellt hat
+
 $query = "
     SELECT 
         t.id,
@@ -25,13 +25,13 @@ $query = "
 ";
 $params = [$user_id];
 
-// Status-Filter
+
 if ($status_filter !== 'all') {
     $query .= " AND t.status = ?";
     $params[] = $status_filter;
 }
 
-// Sortierung
+
 if ($sort_by === 'status') {
     $query .= " ORDER BY t.status ASC, t.due_date ASC";
 } elseif ($sort_by === 'newest') {
@@ -44,7 +44,7 @@ $stmt = $pdo->prepare($query);
 $stmt->execute($params);
 $tasks = $stmt->fetchAll();
 
-// kleine Helfer
+
 function statusBadge($status) {
     return [
         'pending'   => ['bg-warning', 'Ausstehend'],

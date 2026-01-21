@@ -4,7 +4,7 @@ require_once __DIR__ . '/util/db_courses.php';
 require_once __DIR__ . '/util/db_tasks.php';
 require_once __DIR__ . '/util/auth_helper.php';
 
-// Nur eingeloggte User
+
 requireLogin();
 
 $course_id = $_GET['course_id'] ?? null;
@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $description = trim($_POST['description'] ?? '');
     $due_date = $_POST['due_date'] ?? '';
     
-    // Validierung
+
     if (!$title) {
         $errors[] = 'Aufgabentitel ist erforderlich.';
     }
@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     
-    // Keine Fehler? Speichern!
+
     if (empty($errors)) {
         $task_id = createTask($course_id, $title, $description, $due_date);
         

@@ -10,7 +10,7 @@ requireLogin();
 $errors = [];
 $pdo = $GLOBALS['pdo'];
 
-// DELETE Course (nur Owner oder Admin)
+// DELETE Course 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_course') {
     $course_id = $_POST['course_id'] ?? null;
     
@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
-// DELETE Task (nur Owner oder Admin)
+// DELETE Task
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_task') {
     $task_id = $_POST['task_id'] ?? null;
     
@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
-// DELETE File (nur Owner oder Admin)
+// DELETE File
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_file') {
     $file_id = $_POST['file_id'] ?? null;
     
@@ -64,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $file = $stmt->fetch();
         
         if ($file && canEditCourse($file['course_id'])) {
-            // Datei vom Server löschen
+            // Aus Server löschen
             $file_path = __DIR__ . $file['file_path'];
             if (file_exists($file_path)) {
                 unlink($file_path);
