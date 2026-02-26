@@ -2,8 +2,4 @@
 
 
 
-RememberMe-Checkbox
-
-Datenbank ändern: InnoDB --> MariaDB
-
-Homepage-Layout
+Projektarbeit in der LV WEB1 an der FHTW - IT
